@@ -3,7 +3,6 @@ package cn.nju.st13;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -13,8 +12,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
 
 public class WordPair {
     public static class WordPairMapper extends Mapper<Object, Text, Text, IntWritable> {
@@ -25,6 +23,11 @@ public class WordPair {
             String input = value.toString();
             String[] inputList = input.split(" ");
 
+            // 跳过只有一个人名的段落
+            if (inputList.length < 2) {
+                return;
+            }
+
             // 去掉重复出现的名字
             ArrayList<String> nameList = new ArrayList<>();
             for (String name : inputList) {
@@ -32,6 +35,8 @@ public class WordPair {
                     nameList.add(name);
                 }
             }
+            // 将名字排序，避免两个名字颠倒顺序造成的影响
+            Collections.sort(nameList);
 
             for (int i = 0; i < nameList.size(); i++) {
                 for (int j = i+1; j < nameList.size(); j++) {

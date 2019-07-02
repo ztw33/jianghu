@@ -47,8 +47,8 @@ public class WordSeg {
                 }
             }
 
-            // 除去无人名以及只有一个人名的段落
-            if (resultName.size() > 1) {
+            // 除去无人名的段落
+            if (resultName.size() > 0) {
                 StringBuilder sb = new StringBuilder();
                 for (String s : resultName)
                 {

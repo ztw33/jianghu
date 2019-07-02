@@ -18,10 +18,8 @@ public class App
 {
     public static void main( String[] args )
     {
-        StringTokenizer itr = new StringTokenizer("1 2 3 4");
-        while (itr.hasMoreTokens()) {
-            itr.nextToken();
-            System.out.println("a");
-        }
+        String input = "12";
+        String[] inputList = input.split(" ");
+        System.out.println(inputList.length);
     }
 }
