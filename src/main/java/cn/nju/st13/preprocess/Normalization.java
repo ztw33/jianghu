@@ -1,8 +1,7 @@
-package cn.nju.st13;
+package cn.nju.st13.preprocess;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -25,6 +24,7 @@ public class Normalization {
             String name1 = names.split(",")[0];
             String name2 = names.split(",")[1];
 
+            // 不会出现颠倒的情况
             k.set(name1);
             v.set(name2+":"+freq);
             context.write(k, v);
@@ -38,7 +38,9 @@ public class Normalization {
 
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             double sum = 0;
-            // 特别注意：Iterable变量不能循环访问两遍啊。。
+            /*
+             * 特别注意：Iterable变量不能循环访问两遍啊。。
+             */
             ArrayList<String> valuesList = new ArrayList<>();
             for (Text val : values) {
                 sum += Integer.parseInt(val.toString().split(":")[1]);
@@ -48,8 +50,8 @@ public class Normalization {
             for (String val : valuesList) {
                 String[] temp = val.split(":");
                 String name = temp[0];
-                double weight = Double.valueOf(temp[1])/sum;
-                resultList.add(name+","+String.format("%.6f", weight));
+                double weight = Double.valueOf(temp[1]) / sum;
+                resultList.add(name + "," + String.format("%.6f", weight));
             }
             StringBuilder result = new StringBuilder();
             for (int i = 0; i < resultList.size(); i++) {
@@ -64,16 +66,16 @@ public class Normalization {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void Task3Main(Path inputPath, Path outputPath) throws Exception {
         Configuration conf = new Configuration();
-        Job job = Job.getInstance(conf, "2019st13 Normaliztion Job");
-        job.setMapperClass(NormMapper.class);
-        job.setReducerClass(NormReducer.class);
+        Job job = Job.getInstance(conf, "2019st13 Normalization Job");
+        job.setMapperClass(Normalization.NormMapper.class);
+        job.setReducerClass(Normalization.NormReducer.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
         job.setJarByClass(Normalization.class);
-        FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        FileInputFormat.addInputPath(job, inputPath);
+        FileOutputFormat.setOutputPath(job, outputPath);
+        job.waitForCompletion(true);
     }
 }

@@ -1,4 +1,4 @@
-package cn.nju.st13;
+package cn.nju.st13.preprocess;
 
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
@@ -13,8 +13,11 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
+import org.apache.hadoop.mapreduce.lib.output.LazyOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.MultipleOutputs;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,13 +30,21 @@ import java.util.List;
 public class WordSeg {
     public static class WordSegMapper extends Mapper<Object, Text, Text, NullWritable> {
 
+        private MultipleOutputs mos;
+        private List<String> nameList;
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+            mos = new MultipleOutputs(context);
+            // 获得名字列表
+            String nameListStr = context.getConfiguration().get("NameList");
+            nameList = Arrays.asList(nameListStr.split(" "));
+        }
+
         private Text word = new Text();
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
-            // 获得名字列表
-            String nameListStr = context.getConfiguration().get("NameList");
-            List<String> nameList = Arrays.asList(nameListStr.split(" "));
-
             // 分词
             String str = value.toString();
             Result result = ToAnalysis.parse(str);
@@ -56,24 +67,27 @@ public class WordSeg {
                     sb.append(" ");
                 }
                 word.set(sb.toString());
-                context.write(word, NullWritable.get());
+                //context.write(NullWritable.get(), word);
+                FileSplit fileSplit = (FileSplit)context.getInputSplit();
+                String fileName = fileSplit.getPath().getName();
+                mos.write(word, NullWritable.get(), fileName+".segment");
             }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            super.cleanup(context);
+            mos.close();
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    static void Task1Main(Path inputPath, Path nameListPath, Path outputPath) throws Exception {
         Configuration conf = new Configuration();
-        String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-
-        if(otherArgs.length < 3){
-            System.err.println("必须输入读取文件路径、人名列表和输出路径");
-            System.exit(2);
-        }
 
         // 读入人名列表，加入自定义字典
         ArrayList<String> nameList = new ArrayList<>();
         FileSystem fs= FileSystem.get(conf);
-        FSDataInputStream fin = fs.open(new Path(args[1]));
+        FSDataInputStream fin = fs.open(nameListPath);
         BufferedReader br = null;
         String line;
         try {
@@ -105,8 +119,9 @@ public class WordSeg {
         job.setMapperClass(WordSegMapper.class);
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(NullWritable.class);
-        FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[2]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        FileInputFormat.addInputPath(job, inputPath);
+        FileOutputFormat.setOutputPath(job, outputPath);
+        LazyOutputFormat.setOutputFormatClass(job, TextOutputFormat.class);
+        job.waitForCompletion(true);
     }
 }

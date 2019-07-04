@@ -1,4 +1,4 @@
-package cn.nju.st13;
+package cn.nju.st13.preprocess;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -12,45 +12,41 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 
-public class WordPair {
-    public static class WordPairMapper extends Mapper<Object, Text, Text, IntWritable> {
+public class WordCoOcc_pair {
+
+    public static class WordCoOccMapper extends Mapper<Object, Text, WordPair, IntWritable> {
         private final static IntWritable one = new IntWritable(1);
-        private Text word = new Text();
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String input = value.toString();
             String[] inputList = input.split(" ");
 
-            // 跳过只有一个人名的段落
+            /* 跳过只有一个人名的段落 */
             if (inputList.length < 2) {
                 return;
             }
 
-            // 去掉重复出现的名字
+            /* 去掉重复出现的名字 */
             ArrayList<String> nameList = new ArrayList<>();
             for (String name : inputList) {
                 if (!nameList.contains(name)) {
                     nameList.add(name);
                 }
             }
-            // 将名字排序，避免两个名字颠倒顺序造成的影响
-            Collections.sort(nameList);
 
             for (int i = 0; i < nameList.size(); i++) {
                 for (int j = i+1; j < nameList.size(); j++) {
-                    word.set(nameList.get(i)+","+nameList.get(j));
-                    context.write(word, one);
+                    context.write(new WordPair(nameList.get(i), nameList.get(j)), one);
                 }
             }
         }
     }
 
-    public static class WordPairReducer extends Reducer<Text, IntWritable, Text, IntWritable> {
+    public static class WordCoOccCombiner extends Reducer<WordPair, IntWritable, WordPair, IntWritable> {
         private IntWritable result = new IntWritable();
 
-        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+        public void reduce(WordPair key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
             int sum = 0;
             for (IntWritable val : values) {
                 sum += val.get();
@@ -60,16 +56,30 @@ public class WordPair {
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static class WordCoOccReducer extends Reducer<WordPair, IntWritable, Text, IntWritable> {
+        private IntWritable result = new IntWritable();
+
+        public void reduce(WordPair key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException {
+            int sum = 0;
+            for (IntWritable val : values) {
+                sum += val.get();
+            }
+            result.set(sum);
+            context.write(new Text(key.toString()), result);
+        }
+    }
+
+    static void Task2Main(Path inputPath, Path outputPath) throws Exception {
         Configuration conf = new Configuration();
         Job job = Job.getInstance(conf, "2019st13 Word Co-Occurrence Job");
-        job.setMapperClass(WordPairMapper.class);
-        job.setReducerClass(WordPairReducer.class);
-        job.setOutputKeyClass(Text.class);
+        job.setMapperClass(WordCoOcc_pair.WordCoOccMapper.class);
+        job.setCombinerClass(WordCoOcc_pair.WordCoOccCombiner.class);
+        job.setReducerClass(WordCoOcc_pair.WordCoOccReducer.class);
+        job.setOutputKeyClass(WordPair.class);
         job.setOutputValueClass(IntWritable.class);
-        job.setJarByClass(WordPair.class);
-        FileInputFormat.addInputPath(job, new Path(args[0]));
-        FileOutputFormat.setOutputPath(job, new Path(args[1]));
-        System.exit(job.waitForCompletion(true) ? 0 : 1);
+        job.setJarByClass(WordCoOcc_pair.class);
+        FileInputFormat.addInputPath(job, inputPath);
+        FileOutputFormat.setOutputPath(job, outputPath);
+        job.waitForCompletion(true);
     }
 }
