@@ -1,11 +1,11 @@
 package cn.nju.st13;
 
 import java.io.IOException;
-import java.sql.Time;
 import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -121,6 +121,26 @@ class LabelProp {
 		}
     }
 
+    static class ClusterMapper extends Mapper <Object, Text, Text, Text> {
+        @Override
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            String[] content = value.toString().split(" |\t", 2);
+            String node = content[0];
+            String label = content[1];
+
+            context.write(new Text(label), new Text(node));
+        }
+    }
+
+    static class ClusterReducer extends Reducer <Text, Text, Text, Text> {
+        @Override
+        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+			for (Text val : values) {
+                context.write(val, key);
+            }
+		}
+    }
+
     static void initialize(String inputPath, String outputPath) {
         Configuration configuration = new Configuration();
 
@@ -135,6 +155,7 @@ class LabelProp {
         initJob.setMapperClass(InitMapper.class);
         initJob.setReducerClass(InitReducer.class);
         initJob.setInputFormatClass(TextInputFormat.class);
+        initJob.setNumReduceTasks(5);
         // initJob.setOutputKeyClass(Text.class);
         // initJob.setOutputValueClass(IntWritable.class);
         try {
@@ -144,6 +165,13 @@ class LabelProp {
             ioe.printStackTrace();
         }
         FileOutputFormat.setOutputPath(initJob, new Path(outputPath));
+
+        try {
+            initJob.waitForCompletion(true);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     static void iterate(String inputPath, String outputPath) {
@@ -157,9 +185,10 @@ class LabelProp {
             ioe.printStackTrace();
         }
         iterJob.setJarByClass(LabelProp.class);
-        iterJob.setMapperClass(InitMapper.class);
-        iterJob.setReducerClass(InitReducer.class);
+        iterJob.setMapperClass(IterMapper.class);
+        iterJob.setReducerClass(IterReducer.class);
         iterJob.setInputFormatClass(TextInputFormat.class);
+        iterJob.setNumReduceTasks(5);
         // iterJob.setOutputKeyClass(Text.class);
         // iterJob.setOutputValueClass(IntWritable.class);
         try {
@@ -169,6 +198,45 @@ class LabelProp {
             ioe.printStackTrace();
         }
         FileOutputFormat.setOutputPath(iterJob, new Path(outputPath));
+
+        try {
+            iterJob.waitForCompletion(true);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    static void cluster(String inputPath, String outputPath) {
+        Configuration configuration = new Configuration();
+
+        Job clusterJob = null;
+        try {
+            clusterJob = Job.getInstance(configuration, "2019St13 LabelProp Clustering Job");
+        }
+        catch(IOException ioe) {
+            ioe.printStackTrace();
+        }
+        clusterJob.setJarByClass(LabelProp.class);
+        clusterJob.setMapperClass(InitMapper.class);
+        clusterJob.setReducerClass(InitReducer.class);
+        clusterJob.setInputFormatClass(TextInputFormat.class);
+        // clusterJob.setOutputKeyClass(Text.class);
+        // clusterJob.setOutputValueClass(IntWritable.class);
+        try {
+            FileInputFormat.addInputPath(clusterJob, new Path(inputPath));
+        }
+        catch(IOException ioe) {
+            ioe.printStackTrace();
+        }
+        FileOutputFormat.setOutputPath(clusterJob, new Path(outputPath));
+
+        try {
+            clusterJob.waitForCompletion(true);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     public static void main(String[] args) {
@@ -180,6 +248,18 @@ class LabelProp {
 
         for (int i = 0; i < epoch; ++i) {
             iterate(outputPath + ".tempout", outputPath + ".tempout");
+        }
+
+        cluster(outputPath + ".tempout", outputPath);
+
+        try {
+            FileSystem fs = new Path(args[1] + ".tempout").getFileSystem(new Configuration());
+            if(fs.exists(new Path(args[1] + ".tempout"))){
+                    fs.delete(new Path(args[1] + ".tempout"), true); 
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
