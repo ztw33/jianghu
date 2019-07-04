@@ -25,6 +25,7 @@ public class PageRankIter {
 			StringBuilder neighbours = new StringBuilder("");
 			for (int i = 0; i < length - 1; i++) {
 				neighbours.append(tokens[i]);
+				neighbours.append('|');
 			}
 			//传递图结构
 			context.write(new Text(nodeName), new PageRankElement(neighbours.toString()));
@@ -55,7 +56,7 @@ public class PageRankIter {
 				}
 			}
 			newPrValue += (1 - d) * (1 / num);
-			context.write(key, new Text(neighbours + "|PR," + Double.toString(newPrValue)));
+			context.write(key, new Text(neighbours + "PR," + Double.toString(newPrValue)));
 		}
 	}
 

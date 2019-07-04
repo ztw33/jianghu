@@ -1,6 +1,7 @@
 package cn.nju.st13.pageRank;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
@@ -28,6 +29,11 @@ class LineCounter {
 
 public class PageRankDirver {
 	public static void main(String[] args) throws Exception {
+		int MAX_ITERATION_TIMES = 5;
+		if(args.length==3) {
+			MAX_ITERATION_TIMES = Integer.parseInt(args[2]);
+			System.out.println("MAX_ITERATION_TIMES : "+ MAX_ITERATION_TIMES);
+		}
 		//计算一共有多少个人物
 		Configuration configuration1 = new Configuration();
 		Job countJob = Job.getInstance(configuration1, "2019st13 PR count");
@@ -55,7 +61,26 @@ public class PageRankDirver {
 		args3[0] = args2[1];
 		args3[1] = args[1] + "_temp2";
 		args3[2] = args2[2];
-		PageRankIter.main(args3);
+		for(int i = 0;i < MAX_ITERATION_TIMES;i++) {
+			PageRankIter.main(args3);
+			FileSystem fs = new Path(args2[1]).getFileSystem(configuration1);
+			if (fs.exists(new Path(args2[1]))) {
+				fs.delete(new Path(args2[1]));
+				fs.rename(new Path(args3[1]), new Path(args2[1]));
+			}
+		}
+
+		//整理结果，进行排序
+		String [] args4 = new String[2];
+		args4[0] = args2[1];
+		args4[1] = args[1];
+		PageViewer.main(args4);
+
+		//删除中间文件
+		FileSystem fs = new Path(args2[1]).getFileSystem(configuration1);
+		if(fs.exists(new Path(args2[1]))) {
+			fs.delete(new Path(args2[1]), true);
+		}
 
 	}
 }
