@@ -86,7 +86,7 @@ public class WordSeg {
 
         // 读入人名列表，加入自定义字典
         ArrayList<String> nameList = new ArrayList<>();
-        FileSystem fs= FileSystem.get(conf);
+        FileSystem fs= nameListPath.getFileSystem(conf);
         FSDataInputStream fin = fs.open(nameListPath);
         BufferedReader br = null;
         String line;
