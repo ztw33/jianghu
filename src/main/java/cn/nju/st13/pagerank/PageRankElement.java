@@ -1,9 +1,8 @@
-package cn.nju.st13.pageRank;
+package cn.nju.st13.pagerank;
 
 import org.apache.hadoop.io.*;
 
 import java.io.*;
-import java.util.Map;
 
 public class PageRankElement implements Writable {
 	//如果isNode是True, 那么传递的是图结构，content是所有的邻居

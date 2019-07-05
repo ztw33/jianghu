@@ -1,4 +1,4 @@
-package cn.nju.st13.pageRank;
+package cn.nju.st13.pagerank;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
