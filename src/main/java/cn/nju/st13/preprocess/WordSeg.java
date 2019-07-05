@@ -3,7 +3,7 @@ package cn.nju.st13.preprocess;
 import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.library.DicLibrary;
-import org.ansj.splitWord.analysis.ToAnalysis;
+import org.ansj.splitWord.analysis.DicAnalysis;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
@@ -40,6 +40,9 @@ public class WordSeg {
             // 获得名字列表
             String nameListStr = context.getConfiguration().get("NameList");
             nameList = Arrays.asList(nameListStr.split(" "));
+            for (String name : nameList) {
+                DicLibrary.insert(DicLibrary.DEFAULT, name, "nr", 1000);
+            }
         }
 
         private Text word = new Text();
@@ -47,7 +50,7 @@ public class WordSeg {
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             // 分词
             String str = value.toString();
-            Result result = ToAnalysis.parse(str);
+            Result result = DicAnalysis.parse(str);
             List<Term> terms = result.getTerms();
 
             // 获得列表中的名字
@@ -88,20 +91,13 @@ public class WordSeg {
         ArrayList<String> nameList = new ArrayList<>();
         FileSystem fs= nameListPath.getFileSystem(conf);
         FSDataInputStream fin = fs.open(nameListPath);
-        BufferedReader br = null;
         String line;
-        try {
-            br = new BufferedReader(new InputStreamReader(fin, StandardCharsets.UTF_8));
-            while((line = br.readLine()) != null) {
-                DicLibrary.insert(DicLibrary.DEFAULT, line, "nr", 1000);
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(fin, StandardCharsets.UTF_8))) {
+            while ((line = br.readLine()) != null) {
                 nameList.add(line);
             }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (br != null) {
-                br.close();
-            }
         }
 
         StringBuilder nameStr = new StringBuilder();
