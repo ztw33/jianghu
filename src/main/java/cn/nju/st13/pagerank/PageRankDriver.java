@@ -29,10 +29,10 @@ class LineCounter {
 
 public class PageRankDriver {
 	//添加两个可选参数
-	//-max_iter=n(n为整数,默认为5)
+	//-max_iter=n(n为整数,默认为10)
 	//-retain_process=true/false(是否保留中间结果，默认为false, 开启时，中间结果用于可视化分析)
 	public static void main(String[] args) throws Exception {
-		int MAX_ITERATION_TIMES = 5;
+		int MAX_ITERATION_TIMES = 10;
 		boolean RETAIN_PROCESS = false;
 		for(int i = 2;i < args.length;i++) {
 			String parameter = args[i];
@@ -55,6 +55,11 @@ public class PageRankDriver {
 
 		System.out.println("Set max_iter = "+MAX_ITERATION_TIMES);
 		System.out.println("Set retain_process = " + RETAIN_PROCESS);
+
+		//如果保留中间结果
+		if(RETAIN_PROCESS) {
+			args[1] = args[1] + "/output";
+		}
 
 		//计算一共有多少个人物
 		Configuration configuration1 = new Configuration();
