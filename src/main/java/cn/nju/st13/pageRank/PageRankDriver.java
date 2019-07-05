@@ -9,7 +9,6 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 
 
@@ -27,7 +26,7 @@ class LineCounter {
 	}
 }
 
-public class PageRankDirver {
+public class PageRankDriver {
 	public static void main(String[] args) throws Exception {
 		int MAX_ITERATION_TIMES = 5;
 		if(args.length==3) {
@@ -37,7 +36,7 @@ public class PageRankDirver {
 		//计算一共有多少个人物
 		Configuration configuration1 = new Configuration();
 		Job countJob = Job.getInstance(configuration1, "2019st13 PR count");
-		countJob.setJarByClass(PageRankDirver.class);
+		countJob.setJarByClass(PageRankDriver.class);
 		countJob.setMapperClass(LineCounter.CounterMapper.class);
 		countJob.setInputFormatClass(TextInputFormat.class);
 		countJob.setOutputFormatClass(NullOutputFormat.class);
