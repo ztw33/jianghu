@@ -62,4 +62,10 @@
 ### 打包
 mvn package -Dhttps.protocols=TLSv1.2
 
+### 运行
+hadoop jar *.jar cn.nju.st13.Main arg0 arg1 arg2 
++ arg0:小说路径
++ arg1:人名文件
++ arg2:输出路径
+
 
