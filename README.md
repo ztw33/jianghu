@@ -58,5 +58,8 @@
 
 排序与整理
 
+## 打包 及 运行方法
+### 打包
+mvn package -Dhttps.protocols=TLSv1.2
 
 
