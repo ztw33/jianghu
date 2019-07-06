@@ -61,9 +61,5 @@
 ## 打包 及 运行方法
 ### 打包
 mvn package -Dhttps.protocols=TLSv1.2
-### 运行
-hadoop jar jianghu-1.0-SNAPSHOT-jar-with-dependencies.jar cn.nju.st13.preprocess.Preprocess arg0 arg1 arg2 arg3
-+ args0： 所有小说的文件夹
-+ args1： 人名文件路径
-+ args2： 输出路径
-+ args3： -1 -2 -3 代表三种算法，-1为baseline
+
+
