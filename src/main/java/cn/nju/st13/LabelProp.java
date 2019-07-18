@@ -143,6 +143,7 @@ public class LabelProp {
 			for (Text val : values) {
                 context.write(val, key);
             }
+            context.write(new Text(), new Text());
 		}
     }
 
@@ -247,7 +248,7 @@ public class LabelProp {
     public static void main(String[] args) {
         Path inputPath = new Path(args[0]);
         Path outputPath = new Path(args[1]);
-        int epoch = 2;
+        int epoch = 10;
         try {
             Configuration configuration = new Configuration();
             Path tempin = new Path(outputPath + ".tempin");
