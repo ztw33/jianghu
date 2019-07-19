@@ -2,9 +2,7 @@ package cn.nju.st13.labelprop;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
-import java.util.Map.Entry;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -18,7 +16,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 
 public class LabelProp {
-    public static class InitMapper extends Mapper <Object, Text, Text, Text> {
+    static class InitMapper extends Mapper <Object, Text, Text, Text> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] content = value.toString().split(" |\\t");
@@ -30,7 +28,7 @@ public class LabelProp {
         }
     }
 
-    public static class InitReducer extends Reducer <Text, Text, Text, Text> {
+    static class InitReducer extends Reducer <Text, Text, Text, Text> {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			for(Text val : values) {
@@ -40,7 +38,7 @@ public class LabelProp {
 		}
     }
 
-    public static class IterMapper extends Mapper <Object, Text, Text, Text> {
+    static class IterMapper extends Mapper <Object, Text, Text, Text> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] content = value.toString().split(" |\\t");
@@ -59,7 +57,7 @@ public class LabelProp {
         }
     }
 
-    public static class IterReducer extends Reducer <Text, Text, Text, Text> {
+    static class IterReducer extends Reducer <Text, Text, Text, Text> {
         Random randGen = new Random();
 
         @Override
@@ -115,7 +113,7 @@ public class LabelProp {
             //find maximum weight label
             Integer maxLabel = new Integer(-1);
             Double maxValue = new Double(-1.0);
-            for (Map.Entry<Integer, Double> entry : weightMap.entrySet()) {
+            for (HashMap.Entry<Integer, Double> entry : weightMap.entrySet()) {
                 if (entry.getValue() > maxValue) {
                     maxValue = entry.getValue();
                     maxLabel = entry.getKey();
@@ -128,7 +126,7 @@ public class LabelProp {
 		}
     }
 
-    public static class ClusterMapper extends Mapper <Object, Text, Text, Text> {
+    static class ClusterMapper extends Mapper <Object, Text, Text, Text> {
         @Override
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] content = value.toString().split(" |\\t", 3);
@@ -139,16 +137,17 @@ public class LabelProp {
         }
     }
 
-    public static class ClusterReducer extends Reducer <Text, Text, Text, Text> {
+    static class ClusterReducer extends Reducer <Text, Text, Text, Text> {
         @Override
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			for (Text val : values) {
                 context.write(val, key);
             }
+            context.write(new Text(), new Text());
 		}
     }
 
-    public static void initialize(Path inputPath, Path outputPath) {
+    static void initialize(Path inputPath, Path outputPath) {
         Configuration configuration = new Configuration();
 
         Job initJob = null;
@@ -181,7 +180,7 @@ public class LabelProp {
         }
     }
 
-    public static void iterate(Path inputPath, Path outputPath, int epochId) {
+    static void iterate(Path inputPath, Path outputPath, int epochId) {
         Configuration configuration = new Configuration();
 
         Job iterJob = null;
@@ -214,7 +213,7 @@ public class LabelProp {
         }
     }
 
-    public static void cluster(Path inputPath, Path outputPath) {
+    static void cluster(Path inputPath, Path outputPath) {
         Configuration configuration = new Configuration();
 
         Job clusterJob = null;
@@ -249,7 +248,7 @@ public class LabelProp {
     public static void main(String[] args) {
         Path inputPath = new Path(args[0]);
         Path outputPath = new Path(args[1]);
-        int epoch = 15;
+        int epoch = 10;
         try {
             Configuration configuration = new Configuration();
             Path tempin = new Path(outputPath + ".tempin");
